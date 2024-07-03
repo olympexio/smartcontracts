@@ -1,29 +1,51 @@
-# README #
-##########
-This Repo contains SmartContract from Olympex.io
+`
+# Smart Contracts Repository
 
-### What is this repository for? ###
+## Introduction
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+Welcome to the Smart Contracts Audit Repository by **Olympex**. This repository contains a set of smart contracts developed by our team.
 
-### How do I get set up? ###
+## Contracts
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+This repository includes the following smart contracts:
 
-### Contribution guidelines ###
+1. **OlympexAggregator.sol**
+   - **Description:** [Brief description of what Contract does]
 
-* Writing tests
-* Code review
-* Other guidelines
+2. **OlympexMessenger.sol**
+   - **Description:** [Brief description of what Contract does]
 
-### Who do I talk to? ###
+3. **FeeCollector.sol**
+    - **Description:** [Brief description of what Contract does]
 
-* Repo owner or admin
-* Other community or team contact
+4. **OlympiansTreasury.sol**
+   - **Description:** [Brief description of what Contract does]
+
+5. **OlympexLimitOrder.sol**
+   - **Description:** [Brief description of what Contract does]
+
+6. **OlympexPas.sol**
+   - **Description:** [Brief description of what Contract does]
+
+7. **Olympians.sol**
+   - **Description:** [Brief description of what Contract does]
+
+
+## Purpose
+
+The primary goal of this repository is to facilitate the auditing process. By providing open access to our smart contracts, we invite auditors to review and provide feedback on their security and performance. This proactive approach is part of our commitment to transparency and quality.
+
+## About Olympex
+
+**Olympex** is a leading innovator in the blockchain space, dedicated to developing secure, efficient, and impactful solutions. Our team of experts works tirelessly to ensure that our products meet the highest standards of excellence and security.
+
+## Get in Touch
+
+If you have any questions or need further information, please feel free to contact us:
+
+- **Email:** [info@olympex.io](mailto:info@olympex.io)
+- **Website:** [www.olympex.io](https://www.olympex.io)
+- **Twitter:** [@empresa1](https://twitter.com/olympex)
+- **LinkedIn:** [Empresa1](https://www.linkedin.com/company/olympex)
+
+We look forward to collaborating with you and ensuring the success of our smart contracts.
