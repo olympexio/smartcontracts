@@ -1,5 +1,4 @@
-`
-# Smart Contracts Repository
+# Olympex Smart Contracts Repository
 
 ## Introduction
 
