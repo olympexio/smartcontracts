@@ -44,7 +44,7 @@ If you have any questions or need further information, please feel free to conta
 
 - **Email:** [info@olympex.io](mailto:info@olympex.io)
 - **Website:** [www.olympex.io](https://www.olympex.io)
-- **Twitter:** [@empresa1](https://twitter.com/olympex)
-- **LinkedIn:** [Empresa1](https://www.linkedin.com/company/olympex)
+- **Twitter:** [@olympex](https://twitter.com/olympex)
+- **LinkedIn:** [Olympex](https://www.linkedin.com/company/olympex)
 
 We look forward to collaborating with you and ensuring the success of our smart contracts.
