@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
-import '@openzeppelin/contracts/access/AccessControl.sol';
-
 import './OlympiansWhitelist.sol';
 import '../helpers/PercentageManager.sol';
 import '../interfaces/IOlympexTreasury.sol';
 
-import 'hardhat/console.sol';
+import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { ERC721Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
 
-contract Olympians is Ownable, ERC721, PercentageManager, OlympiansWhitelist {
+contract Olympians is
+	OwnableUpgradeable,
+	ERC721Upgradeable,
+	PercentageManager,
+	OlympiansWhitelist,
+	UUPSUpgradeable
+{
 	using Strings for uint256;
 
 	/*********
@@ -80,6 +84,9 @@ contract Olympians is Ownable, ERC721, PercentageManager, OlympiansWhitelist {
 	/// @dev Counter of minted Demigods-type NFTs
 	IOlympexTreasury private OlympexTreasury;
 
+	/// @dev storage gaps for contract upgrade
+	uint256[50] __gap;
+
 	/***************
 	 * 3. MAPPINGS *
 	 ***************/
@@ -101,16 +108,26 @@ contract Olympians is Ownable, ERC721, PercentageManager, OlympiansWhitelist {
 	/****************
 	 * 5. FUNCTIONS *
 	 ****************/
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() {
+		_disableInitializers();
+	}
+
 	/**
 	 * @param name_ Name of the NFT collection
 	 * @param symbol_ Symbol of the NFT collection
 	 * @param signerAddress_ Wallet address authorized to sign backend transactions
 	 **/
-	constructor(
+	function initialize(
 		string memory name_,
 		string memory symbol_,
 		address signerAddress_
-	) Ownable(msg.sender) ERC721(name_, symbol_) OlympiansWhitelist(signerAddress_) {
+	) public initializer {
+		__Ownable_init(msg.sender);
+		__ERC721_init(name_, symbol_);
+		__OlympiansWhitelist_init(signerAddress_);
+		__UUPSUpgradeable_init();
+
 		require(MAX_SUPPLY_DEMIGODS + MAX_SUPPLY_GODS == MAX_SUPPLY, 'Invalid supply');
 
 		require(
@@ -231,4 +248,6 @@ contract Olympians is Ownable, ERC721, PercentageManager, OlympiansWhitelist {
 			_percentage = PERCENTAGE_PER_NFT_DEMIGODS / MAX_SUPPLY_DEMIGODS;
 		}
 	}
+
+	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

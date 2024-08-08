@@ -9,25 +9,25 @@ Welcome to the Smart Contracts Audit Repository by **Olympex**. This repository 
 This repository includes the following smart contracts:
 
 1. **OlympexAggregator.sol**
-   - **Description:** [Brief description of what Contract does]
+   - **Description:** Main contract for token swapping, verifying execution requirements and calling the Messenger contract to route through multiple liquidity pools using encoded parameters.
 
 2. **OlympexMessenger.sol**
-   - **Description:** [Brief description of what Contract does]
+   - **Description:** Executes calls to various modules and contracts, transferring funds across protocols and pools to complete the swap and distribute fees.
 
 3. **FeeCollector.sol**
-    - **Description:** [Brief description of what Contract does]
+    - **Description:** Stores the collected fees, acting as the central repository for the protocol's treasury.
 
 4. **OlympiansTreasury.sol**
-   - **Description:** [Brief description of what Contract does]
+   - **Description:** Serves as the central repository for funds related to Investment NFTs, managing and allocating collected dividends and assets.
 
 5. **OlympexLimitOrder.sol**
-   - **Description:** [Brief description of what Contract does]
+   - **Description:** Executes limit orders within the protocol. This contract call to OlympexAggregator contract for make the swaps.
 
 6. **OlympexPas.sol**
-   - **Description:** [Brief description of what Contract does]
+   - **Description:** Utility NFT: Manages the minting and utility aspects of this NFT, providing holders with access to specific benefits within the protocol.
 
 7. **Olympians.sol**
-   - **Description:** [Brief description of what Contract does]
+   - **Description:** Investment NFT: Manages the minting and utility aspects of this NFT, providing holders with access to dividens of the fee collected.
 
 
 ## Purpose

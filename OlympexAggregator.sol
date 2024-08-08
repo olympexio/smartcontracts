@@ -5,11 +5,10 @@ import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol';
 import '@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol';
 import '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
-import '@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol';
 import '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import './OlympexCommon.sol';
-import './UniswapV3Exchange.sol';
+import './OneInchAggregator.sol';
 import './UniswapV2Aggregator.sol';
 import './libraries/UniversalERC20.sol';
 import './interfaces/IOlympexMessenger.sol';
@@ -20,10 +19,9 @@ import './interfaces/IOlympexCommon.sol';
 contract OlympexAggregator is
 	IOlympexAggregator,
 	OwnableUpgradeable,
-	PausableUpgradeable,
 	OlympexCommon,
+	OneInchAggregator,
 	UniswapV2Aggregator,
-	UniswapV3Exchange,
 	UUPSUpgradeable
 {
 	using SafeERC20 for IERC20;
@@ -52,16 +50,13 @@ contract OlympexAggregator is
 	uint256 public minTradeVolume;
 
 	/**
-	 * @dev It is used as a flag to determine whether a partial fill should be performed or
-	 * not, depending on whether a native token or an ERC20 token is swapped as an input token
-	 **/
-	uint256 private constant _PARTIAL_FILL = 0x01;
-
-	/**
 	 * @dev It is used as an indicator to determine whether to claim an ERC20 token that
 	 * implements approvals through signatures
 	 **/
 	uint256 private constant _SHOULD_CLAIM = 0x02;
+
+	/// @dev storage gaps for contract upgrade
+	uint256[50] __gap;
 
 	/**************
 	 * 3. Events *
@@ -80,12 +75,14 @@ contract OlympexAggregator is
 	function initialize(
 		address feeCollector_,
 		uint256 minTradeVolume_,
-		address signerAddress_
+		address signerAddress_,
+		address router1inch_
 	) external initializer {
-		__Ownable_init(msg.sender);
 		__Pausable_init();
 		__UUPSUpgradeable_init();
-		__UniswapV2Aggregator_init(feeCollector_, signerAddress_);
+		__Ownable_init(msg.sender);
+		__OneInchAggregator_init(router1inch_);
+		__OlympexCommon_init(feeCollector_, signerAddress_);
 
 		minTradeVolume = minTradeVolume_;
 	}
@@ -100,6 +97,10 @@ contract OlympexAggregator is
 
 	function pause() external onlyOwner {
 		_pause();
+	}
+
+	function unpause() public onlyOwner {
+		_unpause();
 	}
 
 	/**
@@ -122,7 +123,7 @@ contract OlympexAggregator is
 		IERC20 dstToken = desc_.dstToken;
 
 		require(msg.value == (srcToken.isETH() ? desc_.amount : 0), 'Invalid msg.value');
-		
+
 		if (flags & _SHOULD_CLAIM != 0) {
 			require(!srcToken.isETH(), 'Claim token is ETH');
 			_claim(srcToken, desc_.srcReceiver, desc_.amount);
@@ -131,10 +132,6 @@ contract OlympexAggregator is
 		address dstReceiver = (desc_.dstReceiver == address(0))
 			? msg.sender
 			: desc_.dstReceiver;
-
-		uint256 initialSrcBalance = (flags & _PARTIAL_FILL != 0)
-			? srcToken.universalBalanceOf(msg.sender)
-			: 0;
 
 		uint256 tradedVolume = desc_.tradedVolume;
 
@@ -157,18 +154,7 @@ contract OlympexAggregator is
 		uint256 spentAmount = desc_.amount;
 		returnAmount_ = dstToken.universalBalanceOf(dstReceiver) - initialDstBalance;
 
-		if (flags & _PARTIAL_FILL != 0) {
-			spentAmount =
-				initialSrcBalance +
-				desc_.amount -
-				srcToken.universalBalanceOf(msg.sender);
-			require(
-				returnAmount_ * desc_.amount >= desc_.minReturnAmount * spentAmount,
-				'Return amount is not enough'
-			);
-		} else {
-			require(returnAmount_ >= desc_.minReturnAmount, 'Return amount is not enough');
-		}
+		require(returnAmount_ >= desc_.minReturnAmount, 'Return amount is not enough');
 
 		tradingVolume[dstReceiver] += tradedVolume;
 
@@ -176,35 +162,6 @@ contract OlympexAggregator is
 	}
 
 	function _authorizeUpgrade(address) internal override onlyOwner {}
-
-	/**
-	 * @dev Internal function to emit the Swapped event with detailed swap information.
-	 * This function emits the Swapped event, providing a concise way to log detailed
-	 * information about a successful token swap. It helps avoid the "Stack too deep" error
-	 * by directly passing individual parameters instead of local variables within the event
-	 * @param desc_ SwapDescription struct containing swap details and parameters
-	 * @param dstReceiver_ Address receiving the destination tokens
-	 * @param spentAmount_ Total amount spent during the swap (source tokens + fees)
-	 * @param returnAmount_ Amount of destination tokens received in the swap
-	 **/
-	function _emitSwapped(
-		IOlympexCommon.SwapDescription calldata desc_,
-		address dstReceiver_,
-		uint256 spentAmount_,
-		uint256 returnAmount_
-	) private {
-		emit Swapped(
-			dstReceiver_,
-			desc_.srcToken,
-			desc_.dstToken,
-			desc_.tradedVolume,
-			spentAmount_,
-			returnAmount_,
-			desc_.nftPoints,
-			desc_.tokenId,
-			desc_.nftType
-		);
-	}
 
 	/**
 	 * @dev Internal function to claim tokens and transfer them to a specified address.

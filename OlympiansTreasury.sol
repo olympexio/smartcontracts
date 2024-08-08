@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+
 import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 import '@openzeppelin/contracts/token/ERC721/IERC721.sol';
 
 import './helpers/PercentageManager.sol';
 import './interfaces/IOlympexAggregator.sol';
 
-contract OlympiansTreasury is PercentageManager {
+contract OlympiansTreasury is PercentageManager, OwnableUpgradeable, UUPSUpgradeable {
 	/*********
 	 * INDEX *
 	 *********/
@@ -32,8 +35,6 @@ contract OlympiansTreasury is PercentageManager {
 	/// @dev Address of the NFT contract allowed to claim dividends
 	IERC721 public nftContractAddress;
 
-	// TODO: al momento de deployar en mainnet esto se puede convertir en una constante
-	// para optimizar el consumo de gas
 	/// @dev Address of the swap contract
 	IOlympexAggregator private OlympexAggregator;
 
@@ -51,9 +52,14 @@ contract OlympiansTreasury is PercentageManager {
 	// Address of the holder => Total tokens claimed
 	mapping(address => uint256) private _claimTrackerByAddress;
 
+	/// @dev storage gaps for contract upgrade
+	uint256[50] __gap;
+
 	/*************
 	 * 4. Events *
 	 *************/
+	event ReceivedFees(address sender, uint amount);
+
 	/// @dev dividend payment claimed
 	event Claimed(address indexed beneficiary_, uint256 amount_);
 
@@ -75,19 +81,31 @@ contract OlympiansTreasury is PercentageManager {
 	/****************
 	 * 5. FUNCTIONS *
 	 ****************/
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() {
+		_disableInitializers();
+	}
+
 	/**
 	 * @param paymentToken_ Token address where dividends are paid to holders
 	 * @param nftContractAddress_ Address of the NFT contract allowed to claim dividends
 	 * @param OlympexAggregator_ Address of the swap contract
 	 **/
-	constructor(
+	function initialize(
 		IERC20 paymentToken_,
 		IERC721 nftContractAddress_,
 		IOlympexAggregator OlympexAggregator_
-	) {
+	) public initializer {
+		__Ownable_init(msg.sender);
+		__UUPSUpgradeable_init();
+
 		paymentToken = paymentToken_;
 		OlympexAggregator = OlympexAggregator_;
 		nftContractAddress = nftContractAddress_;
+	}
+
+	receive() external payable {
+		emit ReceivedFees(msg.sender, msg.value);
 	}
 
 	/**
@@ -145,4 +163,6 @@ contract OlympiansTreasury is PercentageManager {
 	function dividendBalanceStored() internal view returns (uint256) {
 		return _claimTracker + paymentToken.balanceOf((address(this)));
 	}
+
+	function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

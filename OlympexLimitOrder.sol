@@ -26,7 +26,7 @@ contract OlympexLimitOrder is
 	AccessControlUpgradeable,
 	OwnableUpgradeable,
 	IOlympexOrderLimit,
-	// IERC2612,
+	IERC2612,
 	UUPSUpgradeable
 {
 	using UniversalERC20 for IERC20;
@@ -62,6 +62,9 @@ contract OlympexLimitOrder is
 
 	OlympexAggregator private _aggregatorContract;
 
+	/// @dev storage gaps for contract upgrade
+	uint256[50] __gap;
+
 	/*************
 	 * 3. EVENTS *
 	 *************/
@@ -96,7 +99,8 @@ contract OlympexLimitOrder is
 		__Ownable_init(msg.sender);
 		__UUPSUpgradeable_init();
 
-		_grantRole(DEFAULT_ADMIN_ROLE, defaultAdmin);
+		_grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+		_grantRole(ADMIN_ROLE, defaultAdmin);
 		_grantRole(PAUSER_ROLE, pauser);
 		_grantRole(UPGRADER_ROLE, upgrader);
 
@@ -177,7 +181,7 @@ contract OlympexLimitOrder is
 		bytes32[] calldata pools,
 		address payable recipient,
 		UniswapV2Aggregator.SignatureData calldata firm
-	) external payable returns (uint256 returnAmount) {
+	) external payable onlyRole(ADMIN_ROLE) returns (uint256 returnAmount) {
 		IERC20 srcToken_ = IERC20(srcToken);
 
 		require(
@@ -249,7 +253,9 @@ contract OlympexLimitOrder is
 		bytes32 s
 	) external {}
 
-	function nonces(address owner) external {}
+	function DOMAIN_SEPARATOR() external view returns (bytes32) {}
+
+	function nonces(address owner) external view returns (uint256) {}
 
 	function getVersion() external pure returns (uint256) {
 		return 1;

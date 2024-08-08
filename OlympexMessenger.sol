@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
+import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+
 import './FeeCollector.sol';
+
 import './messengers/DMMMessenger.sol';
 import './messengers/SolidlyMessenger.sol';
 import './messengers/UniswapMessenger.sol';
@@ -11,6 +14,7 @@ import './libraries/MessageDescriptions.sol';
 import './messengers/DistributionMessenger.sol';
 
 contract OlympexMessenger is
+	UUPSUpgradeable,
 	IOlympexMessenger,
 	DistributionMessenger,
 	SafeERC20Extension,
@@ -22,26 +26,32 @@ contract OlympexMessenger is
 {
 	using MessageDescriptions for MessageDescription;
 
-	constructor(
+	/// @dev storage gaps for contract upgrade
+	uint256[50] __gap;
+
+	function initialize(
 		address olympex_,
 		address olympians_,
 		address signerAddress_,
 		uint256 percentageOlympex_,
-		uint256 percentageOlympians_
-	)
-		FeeCollector(
+		uint256 percentageOlympians_,
+		address uniswapV3Factory_
+	) public initializer {
+		__Ownable_init(msg.sender);
+		__UUPSUpgradeable_init();
+		FeeCollector.__FeeCollector_init(
 			olympex_,
 			olympians_,
 			signerAddress_,
 			percentageOlympex_,
 			percentageOlympians_
-		)
-	{}
+		);
+		setUniswapV3FactoryAddress(uniswapV3Factory_);
+	}
 
-	receive() external payable {
+	receive() external payable override {
 		// cannot directly send eth to this contract
-		// TODO: hay que evaluar si realmente es necesario colocar esta restricción
-		// require(msg.sender != tx.origin);
+		require(msg.sender != tx.origin);
 	}
 
 	function makeCall(MessageDescription memory desc) external override {
@@ -57,4 +67,12 @@ contract OlympexMessenger is
 			this.makeCall(desc[i]);
 		}
 	}
+
+	function setUniswapV3FactoryAddress(address uniswapV3Factory_) public onlyOwner {
+		uniswapV3Factory = uniswapV3Factory_;
+	}
+
+	function _authorizeUpgrade(
+		address newImplementation
+	) internal override(UUPSUpgradeable, FeeCollector) onlyOwner {}
 }

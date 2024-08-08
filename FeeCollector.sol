@@ -2,18 +2,24 @@
 
 pragma solidity ^0.8.20;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
+import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+
 import '@openzeppelin/contracts/utils/cryptography/ECDSA.sol';
 import '@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol';
+import '@openzeppelin/contracts/token/ERC20/IERC20.sol';
 
 import './interfaces/IFeeCollector.sol';
 import './libraries/UniversalERC20.sol';
 import './helpers/PercentageManager.sol';
 
-import 'hardhat/console.sol';
-
-contract FeeCollector is Ownable, IFeeCollector, PercentageManager {
+contract FeeCollector is
+	OwnableUpgradeable,
+	IFeeCollector,
+	PercentageManager,
+	UUPSUpgradeable
+{
 	using ECDSA for bytes32;
 	using UniversalERC20 for IERC20;
 	using MessageHashUtils for bytes32;
@@ -22,20 +28,29 @@ contract FeeCollector is Ownable, IFeeCollector, PercentageManager {
 	address public olympiansTreasury;
 	uint256 public percentageOlympex;
 	uint256 public percentageOlympians;
-	uint256 public platformFee = 30; // 0.3%;
+	uint256 public platformFee;
 
 	event FeesDistributed(IERC20 indexed token, address beneficiary);
 
 	/// @dev Wallet address authorized to sign backend transactions for onchain validation.
 	address internal _signerAddress;
 
-	constructor(
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() {
+		_disableInitializers();
+	}
+
+	receive() external payable virtual {}
+
+	function __FeeCollector_init(
 		address olympexTreasury_,
 		address olympiansTreasury_,
 		address signerAddress_,
 		uint256 percentageOlympex_,
 		uint256 percentageOlympians_
-	) Ownable(msg.sender) {
+	) public initializer {
+		__Ownable_init(msg.sender);
+		__UUPSUpgradeable_init();
 		olympexTreasury = olympexTreasury_;
 		olympiansTreasury = olympiansTreasury_;
 		_signerAddress = signerAddress_;
@@ -45,6 +60,7 @@ contract FeeCollector is Ownable, IFeeCollector, PercentageManager {
 			'Invalid percentage'
 		);
 
+		platformFee = 30; // 0.3%;
 		percentageOlympex = percentageOlympex_;
 		percentageOlympians = percentageOlympians_;
 	}
@@ -56,7 +72,6 @@ contract FeeCollector is Ownable, IFeeCollector, PercentageManager {
 		bytes calldata signature_
 	) external validPercentage(discountRate_) {
 		uint256 balance = token_.universalBalanceOf(address(this));
-
 		require(balance > 0, 'Balance should not be 0');
 
 		require(
@@ -126,4 +141,8 @@ contract FeeCollector is Ownable, IFeeCollector, PercentageManager {
 				.toEthSignedMessageHash()
 				.recover(signature_) == _signerAddress;
 	}
+
+	function _authorizeUpgrade(
+		address newImplementation
+	) internal virtual override onlyOwner {}
 }

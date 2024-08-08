@@ -1,14 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import '@openzeppelin/contracts/access/Ownable.sol';
-import '@openzeppelin/contracts/token/ERC721/ERC721.sol';
+import { Initializable } from '@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol';
+import { OwnableUpgradeable } from '@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol';
+import { ERC721Upgradeable } from '@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol';
+import { UUPSUpgradeable } from '@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol';
 
 import './DigitalSignatureWhitelist.sol';
 
-import 'hardhat/console.sol';
-
-contract OlympexPas is Ownable, ERC721, DigitalSignatureWhitelist {
+contract OlympexPas is
+	OwnableUpgradeable,
+	ERC721Upgradeable,
+	DigitalSignatureWhitelist,
+	UUPSUpgradeable
+{
 	using ECDSA for bytes32;
 	using Strings for uint256;
 
@@ -41,6 +46,9 @@ contract OlympexPas is Ownable, ERC721, DigitalSignatureWhitelist {
 	/// @dev Base URL for NFT metadata
 	string private _nftURI;
 
+	/// @dev storage gaps for contract upgrade
+	uint256[50] __gap;
+
 	/***************
 	 * 3. MAPPINGS *
 	 ***************/
@@ -59,13 +67,23 @@ contract OlympexPas is Ownable, ERC721, DigitalSignatureWhitelist {
 	/****************
 	 * 5. FUNCTIONS *
 	 ****************/
-	constructor(
+	/// @custom:oz-upgrades-unsafe-allow constructor
+	constructor() {
+		_disableInitializers();
+	}
+
+	function initialize(
 		string memory name_,
 		string memory symbol_,
 		address signerAddress_,
 		string memory nftURI_
-	) ERC721(name_, symbol_) Ownable(msg.sender) DigitalSignatureWhitelist(signerAddress_) {
+	) public initializer {
+		__Ownable_init(msg.sender);
+		__DigitalSignatureWhitelist_init(signerAddress_);
+		__ERC721_init(name_, symbol_);
+		__UUPSUpgradeable_init();
 		_nftURI = nftURI_;
+		_signerAddress = signerAddress_;
 	}
 
 	function currentCount() external view returns (uint256) {
@@ -98,4 +116,10 @@ contract OlympexPas is Ownable, ERC721, DigitalSignatureWhitelist {
 		_requireOwned(tokenId_);
 		return string(abi.encodePacked(_nftURI, '/', tokenId_.toString(), '.json'));
 	}
+
+	function _authorizeUpgrade(address newImplementation)
+        internal
+        onlyOwner
+        override
+    {}
 }
