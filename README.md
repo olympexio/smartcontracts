@@ -15,7 +15,7 @@ This repository includes the following smart contracts:
    - **Description:** Executes calls to various modules and contracts, transferring funds across protocols and pools to complete the swap and distribute fees.
 
 3. **FeeCollector.sol**
-    - **Description:** Collect and Distribute the collected fees.
+    - **Description:** Manage fee collection and distribution.
 
 4. **OlympiansTreasury.sol**
    - **Description:** Serves as the central repository for funds related to Investment NFTs, managing and allocating collected dividends and assets and also collects fees.
